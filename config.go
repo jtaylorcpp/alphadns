@@ -15,6 +15,7 @@ type DomainConfig struct {
 type DNSServerConfig struct {
 	ServerAddress string         `yaml:"serverAddress"`
 	ServerPort    string         `yaml:"serverPort"`
+	TTL           uint32         `yaml:"ttl"`
 	Domains       []DomainConfig `yaml:"domains"`
 }
 
@@ -35,6 +36,7 @@ func DNSServerFromConfig(config *DNSServerConfig) *DNSServer {
 		DNSRecords: &DNSGraph{
 			Roots: make(map[Domain]*DNSNode),
 		},
+		TTL: config.TTL,
 	}
 
 	for _, domainConfig := range config.Domains {

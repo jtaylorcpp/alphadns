@@ -71,7 +71,7 @@ func (dg *DNSGraph) AddRecord(domainString string, ips []string) {
 // Take a string domain name ("test.example.com") and returns a set of
 // assigned IP addresses. This allows for a singular IP or a round robin DNS
 // to be set up.
-func (dg *DNSGraph) GetIPAddresses(domainString string) []*net.IP {
+func (dg *DNSGraph) GetIPAddresses(domainString string) ([]*net.IP, bool) {
 	domains := reverse(strings.Split(domainString, "."))
 	log.Println("looking up domains: ", domains)
 	if root, ok := dg.Roots[Domain(domains[0])]; ok {
@@ -87,14 +87,14 @@ func (dg *DNSGraph) GetIPAddresses(domainString string) []*net.IP {
 					current = node
 				} else {
 					// no matching domain
-					return []*net.IP{}
+					return []*net.IP{}, false
 				}
 			}
 		}
-		return current.Addresses
+		return current.Addresses, true
 	} else {
 		log.Println("domain doesnt exist: ", domains)
-		return []*net.IP{}
+		return []*net.IP{}, false
 	}
 }
 

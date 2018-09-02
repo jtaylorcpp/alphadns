@@ -32,7 +32,7 @@ func TestDNSGraph(t *testing.T) {
 
 	graph.AddRecord("test.example.com", []string{"1.1.1.1", "2.2.2.2"})
 	t.Log("graph: ", graph)
-	testIPs := graph.GetIPAddresses("test.example.com")
+	testIPs, _ := graph.GetIPAddresses("test.example.com")
 	t.Log("graph ips test.example.com: ", testIPs)
 	if !reflect.DeepEqual([]string{"1.1.1.1", "2.2.2.2"},
 		[]string{testIPs[0].String(), testIPs[1].String()}) {
@@ -41,9 +41,15 @@ func TestDNSGraph(t *testing.T) {
 
 	graph.AddRecord("*.example.com", []string{"3.3.3.3", "4.4.4.4"})
 	t.Log("graph: ", graph)
-	wildcard1Ips := graph.GetIPAddresses("test1.example.com")
+	wildcard1Ips, _ := graph.GetIPAddresses("test1.example.com")
 	if !reflect.DeepEqual([]string{"3.3.3.3", "4.4.4.4"},
 		[]string{wildcard1Ips[0].String(), wildcard1Ips[1].String()}) {
 		t.Error("graph wildcard ips not called back correctly")
+	}
+
+	_, ok := graph.GetIPAddresses("google.com")
+	t.Log("domain 'google.com' should not exist: ", ok)
+	if ok {
+		t.Fatal("google.com should not return true")
 	}
 }
