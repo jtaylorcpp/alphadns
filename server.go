@@ -2,74 +2,61 @@ package alphadns
 
 import (
 	"log"
-	"net"
-	"strings"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/miekg/dns"
 )
 
+// DNS Server is the stuct used to start the network service.
 type DNSServer struct {
 	ServerAddress string
 	ServerPort    string
-	DNSRecords    map[Domain]DNSNode
+	DNSRecords    *DNSGraph
 }
 
-func (ds *DNSServer) AddRecord(domain string, ips []string) {
-	domains := reverse(strings.Split(domain, "."))
-	log.Println("adding domain record: ", domains, ips)
+func (ds *DNSServer) AddRecord(domainString string, ips []string) {
+	ds.DNSRecords.AddRecord(domainString, ips)
+}
 
-	// traverse tree and add new leaf
-	var current DNSBranch
-	for idx, domain := range domains {
-		// get current node
-		switch idx {
-		case 0:
-			//root node
-			if node, ok := ds.DNSRecords[Domain(domain)]; ok {
-				// root node exists
-				current = node
-			} else {
-				newRoot := &DNSBranch{
-					Name:       Domain(domain),
-					SubDomains: make(map[Domain]DNSNode),
-				}
-				current = newRoot
-				ds.DNSRecords[Domain(domain)] = newRoot
-			}
-		case len(domains) - 1:
-			//leaf node
-			if leaf, ok := current.SubDomains[Domain(domain)]; ok {
-				// leaf already exists
-			} else {
-				newLeaf := &DNSLeaf{
-					Name:      Domain(domain),
-					Addresses: make([]*net.IP, len(ips)),
-				}
-				for ipIdx, ip := range ips {
-					newIP := net.ParseIP(ip).To4()
-					newLeaf.Addresses[ipIdx] = &newIP
-				}
-				current.SubDomains[Domain(domain)] = newLeaf
-			}
-		default:
-			//branches between root and leaf
-			if node, ok := current.SubDomains[Domain(domain)]; ok {
-				current = node
-			} else {
-				newBranch := &DNSBranch{
-					Name:       Domain(domain),
-					SubDomains: make(map[Domain]DNSNode),
-				}
-				current.SubDomains[Domain(domain)] = newBranch
-				current = newBranch
+func dnsHandler(w dns.ResponseWriter, r *dns.Msg) {
+	log.Println("dns request: ", r.String())
+}
 
-			}
+func (ds *DNSServer) Start() {
+	dns.HandleFunc(".", dnsHandler)
+	go func() {
+		server := &dns.Server{
+			Addr: ds.ServerAddress + ":" + ds.ServerPort,
+			Net:  "udp",
+		}
+		log.Println("starting udp dns server")
+		err := server.ListenAndServe()
+		if err != nil {
+			log.Fatalln("Failed to set udp listener: ", err.Error())
+		}
+	}()
+
+	go func() {
+		server := &dns.Server{
+			Addr: ds.ServerAddress + ":" + ds.ServerPort,
+			Net:  "tcp",
+		}
+		log.Println("starting tcp dns server")
+		err := server.ListenAndServe()
+		if err != nil {
+			log.Fatalln("Failed to set tcp listener: ", err.Error())
+		}
+	}()
+
+	sig := make(chan os.Signal)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	for {
+		select {
+		case s := <-sig:
+			log.Fatalf("Signal (%d) received, stopping\n", s)
 		}
 	}
-}
 
-func reverse(s []string) []string {
-	newSlice := make([]string, len(s))
-	for idx, val := range s {
-		newSlice[len(s)-idx-1] = val
-	}
-	return newSlice
 }

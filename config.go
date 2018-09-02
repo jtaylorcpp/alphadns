@@ -1,6 +1,7 @@
 package alphadns
 
 import (
+	"io/ioutil"
 	"log"
 
 	"gopkg.in/yaml.v2"
@@ -31,13 +32,34 @@ func DNSServerFromConfig(config *DNSServerConfig) *DNSServer {
 	newServer := &DNSServer{
 		ServerAddress: config.ServerAddress,
 		ServerPort:    config.ServerPort,
-		DNSRecords:    make(map[Domain]DNSNode),
+		DNSRecords: &DNSGraph{
+			Roots: make(map[Domain]*DNSNode),
+		},
 	}
 
 	for _, domainConfig := range config.Domains {
 		log.Println("domain server adding record: ", domainConfig)
 		newServer.AddRecord(domainConfig.Name, domainConfig.Addresses)
 	}
+
+	return newServer
+}
+
+// Load a yaml file and parse out DNS servers
+func LoadFromFile(filePath string) *DNSServer {
+	yamlFile, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		log.Fatal("Unable to parse yaml file")
+	}
+
+	newConfig := &DNSServerConfig{}
+	err = yaml.Unmarshal(yamlFile, newConfig)
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	newServer := DNSServerFromConfig(newConfig)
 
 	return newServer
 }

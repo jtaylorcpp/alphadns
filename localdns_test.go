@@ -6,50 +6,44 @@ import (
 	"testing"
 )
 
+func TestSliceReverse(t *testing.T) {
+	s := []string{"hello", "world"}
+	rs := reverse(s)
+	if rs[0] != "world" || rs[1] != "hello" {
+		t.Error("reverse slice broken: ", s, rs)
+	}
+}
+
 func TestDNSNodes(t *testing.T) {
-	addr1 := net.ParseIP("0.0.0.0").To4()
-	leaf1 := DNSLeaf{
-		Name:      "test",
-		Addresses: []*net.IP{&addr1},
+	node := DNSNode{
+		Name:       "test",
+		SubDomains: make(map[Domain]*DNSNode),
+		Addresses:  []*net.IP{},
 	}
 
-	addr2 := net.ParseIP("1.1.1.1").To4()
-	leaf2 := DNSLeaf{
-		Name:      "*",
-		Addresses: []*net.IP{&addr2},
+	t.Log("node test: ", node)
+}
+
+func TestDNSGraph(t *testing.T) {
+	graph := &DNSGraph{
+		Roots: make(map[Domain]*DNSNode),
+	}
+	t.Log("graph: ", graph)
+
+	graph.AddRecord("test.example.com", []string{"1.1.1.1", "2.2.2.2"})
+	t.Log("graph: ", graph)
+	testIPs := graph.GetIPAddresses("test.example.com")
+	t.Log("graph ips test.example.com: ", testIPs)
+	if !reflect.DeepEqual([]string{"1.1.1.1", "2.2.2.2"},
+		[]string{testIPs[0].String(), testIPs[1].String()}) {
+		t.Error("graphs ips not called back correctly")
 	}
 
-	if !reflect.DeepEqual(*leaf1.GetIPAddresses([]Domain{"test"})[0],
-		net.ParseIP("0.0.0.0").To4()) {
-		t.Error("test should be 0.0.0.0")
-	}
-
-	node1 := DNSBranch{
-		Name:       "example",
-		SubDomains: map[Domain]DNSNode{leaf1.Name: &leaf1},
-	}
-
-	node1Address := node1.GetIPAddresses([]Domain{"example", "test"})
-	if !reflect.DeepEqual(*node1Address[0], net.ParseIP("0.0.0.0").To4()) {
-		t.Error("test.example should be 0.0.0.0")
-	}
-
-	node2Address := node1.GetIPAddresses([]Domain{"example", "test2"})
-	if len(node2Address) != 0 {
-		t.Error("test2.example should not exist")
-	}
-
-	node1.SubDomains[leaf2.Name] = &leaf2
-
-	node3Address := node1.GetIPAddresses([]Domain{"example", "*"})
-	t.Log(node3Address)
-	if !reflect.DeepEqual(*node3Address[0], net.ParseIP("1.1.1.1").To4()) {
-		t.Error("*.example should be 1.1.1.1")
-	}
-
-	node4Address := node1.GetIPAddresses([]Domain{"example", "notdefined"})
-	t.Log(node4Address)
-	if !reflect.DeepEqual(*node4Address[0], net.ParseIP("1.1.1.1").To4()) {
-		t.Error("notdefined.example should be widcard *.example or 1.1.1.1")
+	graph.AddRecord("*.example.com", []string{"3.3.3.3", "4.4.4.4"})
+	t.Log("graph: ", graph)
+	wildcard1Ips := graph.GetIPAddresses("test1.example.com")
+	if !reflect.DeepEqual([]string{"3.3.3.3", "4.4.4.4"},
+		[]string{wildcard1Ips[0].String(), wildcard1Ips[1].String()}) {
+		t.Error("graph wildcard ips not called back correctly")
 	}
 }
