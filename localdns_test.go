@@ -14,6 +14,20 @@ func TestSliceReverse(t *testing.T) {
 	}
 }
 
+func TestRemoveWhitespace (t *testing.T) {
+	s := []string{"","hello world"}
+	wsr1 := removeWhitespace(s)
+	if !reflect.DeepEqual(wsr1, []string{"hello world"}) {
+		t.Error("whitespace not removed properly: ",s,wsr1)
+	}
+
+	s2 := []string {""," ","   "}
+	wsr2 := removeWhitespace(s2)
+	if len(wsr2) != 0 {
+		t.Error("error dealing with case of empty slice: ",wsr2)
+	}
+}
+
 func TestDNSNodes(t *testing.T) {
 	node := DNSNode{
 		Name:       "test",

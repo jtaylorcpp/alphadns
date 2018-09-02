@@ -24,11 +24,12 @@ func (ds *DNSServer) AddRecord(domainString string, ips []string) {
 func (ds *DNSServer) localLookup(r *dns.Msg) (*dns.Msg, bool) {
 	m := new(dns.Msg)
 
-	if len(m.Question) > 1 {
-		log.Println("more than 1 dns question: ", m.Question)
+	log.Println("dns questions: ",r.Question)
+	if len(r.Question) > 1 {
+		log.Println("more than 1 dns question: ", r.Question)
 	}
 
-	domain := m.Question[0].Name
+	domain := r.Question[0].Name
 	log.Println("looking up: ", domain)
 
 	ips, ok := ds.DNSRecords.GetIPAddresses(domain)
