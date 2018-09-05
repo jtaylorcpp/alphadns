@@ -3,6 +3,7 @@ package alphadns
 import (
 	"io/ioutil"
 	"log"
+	"net"
 
 	"gopkg.in/yaml.v2"
 )
@@ -16,6 +17,7 @@ type DNSServerConfig struct {
 	ServerAddress string         `yaml:"serverAddress"`
 	ServerPort    string         `yaml:"serverPort"`
 	TTL           uint32         `yaml:"ttl"`
+	Resolvers     []string       `yaml:"resolvers"`
 	Domains       []DomainConfig `yaml:"domains"`
 }
 
@@ -33,6 +35,7 @@ func DNSServerFromConfig(config *DNSServerConfig) *DNSServer {
 	newServer := &DNSServer{
 		ServerAddress: config.ServerAddress,
 		ServerPort:    config.ServerPort,
+		Resolvers:     make([]*net.IP, len(config.Resolvers)),
 		DNSRecords: &DNSGraph{
 			Roots: make(map[Domain]*DNSNode),
 		},
@@ -42,6 +45,11 @@ func DNSServerFromConfig(config *DNSServerConfig) *DNSServer {
 	for _, domainConfig := range config.Domains {
 		log.Println("domain server adding record: ", domainConfig)
 		newServer.AddRecord(domainConfig.Name, domainConfig.Addresses)
+	}
+
+	for idx, resolver := range config.Resolvers {
+		newResolver := net.ParseIP(resolver).To4()
+		newServer.Resolvers[idx] = &newResolver
 	}
 
 	return newServer

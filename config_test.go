@@ -8,6 +8,8 @@ const config string = `
 serverAddress: 127.0.0.1
 serverPort: 8053
 ttl: 30
+resolvers:
+- 8.8.8.8
 domains:
 - name: test1.example.com
   addresses:

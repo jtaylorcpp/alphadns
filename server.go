@@ -2,6 +2,7 @@ package alphadns
 
 import (
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,6 +15,7 @@ type DNSServer struct {
 	ServerAddress string
 	ServerPort    string
 	TTL           uint32
+	Resolvers     []*net.IP
 	DNSRecords    *DNSGraph
 }
 
@@ -24,7 +26,7 @@ func (ds *DNSServer) AddRecord(domainString string, ips []string) {
 func (ds *DNSServer) localLookup(r *dns.Msg) (*dns.Msg, bool) {
 	m := new(dns.Msg)
 
-	log.Println("dns questions: ",r.Question)
+	log.Println("dns questions: ", r.Question)
 	if len(r.Question) > 1 {
 		log.Println("more than 1 dns question: ", r.Question)
 	}
